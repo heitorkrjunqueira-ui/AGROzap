@@ -89,23 +89,49 @@
   </div>
 
   <script>
-    function analisar() {
+    function analisar() {async function analisar() {
 
-      const mensagem = document.getElementById("mensagem").value;
+  const mensagem = document.getElementById("mensagem").value;
+  const resultado = document.getElementById("resultado");
 
-      if (mensagem.trim() === "") {
-        alert("Digite uma mensagem primeiro.");
-        return;
-      }
+  if (mensagem.trim() === "") {
+    alert("Digite uma mensagem primeiro.");
+    return;
+  }
 
-      document.getElementById("resultado").style.display = "block";
+  resultado.style.display = "block";
+  resultado.innerHTML = "🤖 AgroZap está analisando...";
 
-      document.getElementById("resultado").innerHTML =
-        "<strong>🤖 AgroZap:</strong><br><br>" +
-        "Recebi sua mensagem!<br>" +
-        "Na próxima etapa, vou usar inteligência artificial " +
-        "para entender automaticamente o que você escreveu.";
+  try {
+
+    const resposta = await fetch("/api/analisar", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify({
+        mensagem: mensagem
+      })
+    });
+
+    const dados = await resposta.json();
+
+    if (!resposta.ok) {
+      resultado.innerHTML =
+        "❌ Erro: " + (dados.error || "Não foi possível analisar.");
+      return;
     }
+
+    resultado.innerHTML =
+      "<strong>🤖 AgroZap:</strong><br><br>" +
+      dados.resposta;
+
+  } catch (erro) {
+
+    resultado.innerHTML =
+      "❌ Não foi possível conectar ao AgroZap.";
+
+  }
   </script>
 
 </body>
