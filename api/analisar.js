@@ -142,7 +142,52 @@ export default async function handler(req, res) {
     }
 
     // =========================
-    // MONTAR RESPOSTA
+    // SALVAR NO SUPABASE
+    // =========================
+
+    const supabaseUrl = process.env.SUPABASE_URL;
+    const supabaseKey = process.env.SUPABASE_KEY;
+
+    if (!supabaseUrl || !supabaseKey) {
+      return res.status(500).json({
+        error: "As variáveis do Supabase não foram encontradas no Vercel."
+      });
+    }
+
+    const registro = {
+      produtor: "João",
+      tipo: tipo,
+      categoria: categoria,
+      descricao: mensagem,
+      valor: valor,
+      data: new Date().toISOString().split("T")[0]
+    };
+
+    const respostaSupabase = await fetch(
+      `${supabaseUrl}/rest/v1/registros`,
+      {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "apikey": supabaseKey,
+          "Authorization": `Bearer ${supabaseKey}`,
+          "Prefer": "return=representation"
+        },
+        body: JSON.stringify(registro)
+      }
+    );
+
+    const dadosSupabase = await respostaSupabase.json();
+
+    if (!respostaSupabase.ok) {
+      return res.status(500).json({
+        error: "Erro ao salvar no Supabase.",
+        detalhe: dadosSupabase
+      });
+    }
+
+    // =========================
+    // RESPOSTA
     // =========================
 
     let resposta = "🌱 AgroZap identificou este registro:\n\n";
@@ -162,24 +207,17 @@ export default async function handler(req, res) {
 
     resposta += `📝 Descrição: ${mensagem}\n\n`;
 
-    resposta += "✅ Registro analisado com sucesso.";
+    resposta += "✅ Registro salvo no caderno do AgroZap!";
 
     return res.status(200).json({
       resposta: resposta,
-      registro: {
-        tipo: tipo,
-        categoria: categoria,
-        descricao: mensagem,
-        valor: valor,
-        quantidade: quantidade
-      }
+      registro: registro
     });
 
   } catch (erro) {
-
     return res.status(500).json({
-      error: "Erro interno no AgroZap"
+      error: erro.message || "Erro interno no AgroZap"
     });
-
   }
 }
+
