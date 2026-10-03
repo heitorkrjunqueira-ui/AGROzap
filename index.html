@@ -77,10 +77,12 @@
       Seu assistente digital para a propriedade rural.
     </p>
 
-    <textarea id="mensagem"
-      placeholder="Exemplo: Comprei 10 sacos de adubo por R$ 1.800"></textarea>
+    <textarea
+      id="mensagem"
+      placeholder="Exemplo: Comprei 10 sacos de adubo por R$ 1.800"
+    ></textarea>
 
-    <button onclick="analisar()">
+    <button id="botao" onclick="analisar()">
       Analisar mensagem
     </button>
 
@@ -89,49 +91,59 @@
   </div>
 
   <script>
-    function analisar() {async function analisar() {
 
-  const mensagem = document.getElementById("mensagem").value;
-  const resultado = document.getElementById("resultado");
+    async function analisar() {
 
-  if (mensagem.trim() === "") {
-    alert("Digite uma mensagem primeiro.");
-    return;
-  }
+      const mensagem = document.getElementById("mensagem").value;
+      const resultado = document.getElementById("resultado");
+      const botao = document.getElementById("botao");
 
-  resultado.style.display = "block";
-  resultado.innerHTML = "🤖 AgroZap está analisando...";
+      if (mensagem.trim() === "") {
+        alert("Digite uma mensagem primeiro.");
+        return;
+      }
 
-  try {
+      resultado.style.display = "block";
+      resultado.innerHTML = "🤖 AgroZap está analisando...";
+      botao.disabled = true;
 
-    const resposta = await fetch("/api/analisar", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json"
-      },
-      body: JSON.stringify({
-        mensagem: mensagem
-      })
-    });
+      try {
 
-    const dados = await resposta.json();
+        const resposta = await fetch("/api/analisar", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json"
+          },
+          body: JSON.stringify({
+            mensagem: mensagem
+          })
+        });
 
-    if (!resposta.ok) {
-      resultado.innerHTML =
-        "❌ Erro: " + (dados.error || "Não foi possível analisar.");
-      return;
+        const dados = await resposta.json();
+
+        if (!resposta.ok) {
+          resultado.innerHTML =
+            "❌ Erro: " +
+            (dados.error || "Não foi possível analisar a mensagem.");
+          return;
+        }
+
+        resultado.innerHTML =
+          "<strong>🤖 AgroZap:</strong><br><br>" +
+          (dados.resposta || "Não recebi uma resposta da IA.");
+
+      } catch (erro) {
+
+        resultado.innerHTML =
+          "❌ Não foi possível conectar ao servidor do AgroZap.";
+
+      } finally {
+
+        botao.disabled = false;
+
+      }
     }
 
-    resultado.innerHTML =
-      "<strong>🤖 AgroZap:</strong><br><br>" +
-      dados.resposta;
-
-  } catch (erro) {
-
-    resultado.innerHTML =
-      "❌ Não foi possível conectar ao AgroZap.";
-
-  }
   </script>
 
 </body>
