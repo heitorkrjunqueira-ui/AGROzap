@@ -43,7 +43,8 @@ export default async function handler(req, res) {
     if (
       texto.includes("colhi") ||
       texto.includes("produzi") ||
-      texto.includes("produção")
+      texto.includes("produção") ||
+      texto.includes("producao")
     ) {
       tipo = "produção";
     }
@@ -142,17 +143,27 @@ export default async function handler(req, res) {
     }
 
     // =========================
-    // SALVAR NO SUPABASE
+    // PEGAR CONFIGURAÇÕES
     // =========================
 
     const supabaseUrl = process.env.SUPABASE_URL;
     const supabaseKey = process.env.SUPABASE_KEY;
 
-    if (!supabaseUrl || !supabaseKey) {
+    if (!supabaseUrl) {
       return res.status(500).json({
-        error: "As variáveis do Supabase não foram encontradas no Vercel."
+        error: "SUPABASE_URL não foi encontrada no Vercel."
       });
     }
+
+    if (!supabaseKey) {
+      return res.status(500).json({
+        error: "SUPABASE_KEY não foi encontrada no Vercel."
+      });
+    }
+
+    // =========================
+    // PREPARAR REGISTRO
+    // =========================
 
     const registro = {
       produtor: "João",
@@ -162,6 +173,10 @@ export default async function handler(req, res) {
       valor: valor,
       data: new Date().toISOString().split("T")[0]
     };
+
+    // =========================
+    // ENVIAR PARA SUPABASE
+    // =========================
 
     const respostaSupabase = await fetch(
       `${supabaseUrl}/rest/v1/registros`,
@@ -177,17 +192,30 @@ export default async function handler(req, res) {
       }
     );
 
-    const dadosSupabase = await respostaSupabase.json();
+    const textoResposta = await respostaSupabase.text();
+
+    let dadosSupabase;
+
+    try {
+      dadosSupabase = JSON.parse(textoResposta);
+    } catch {
+      dadosSupabase = textoResposta;
+    }
+
+    // =========================
+    // VERIFICAR ERRO
+    // =========================
 
     if (!respostaSupabase.ok) {
       return res.status(500).json({
         error: "Erro ao salvar no Supabase.",
+        status: respostaSupabase.status,
         detalhe: dadosSupabase
       });
     }
 
     // =========================
-    // RESPOSTA
+    // RESPOSTA DO AGROZAP
     // =========================
 
     let resposta = "🌱 AgroZap identificou este registro:\n\n";
@@ -215,9 +243,11 @@ export default async function handler(req, res) {
     });
 
   } catch (erro) {
+
     return res.status(500).json({
-      error: erro.message || "Erro interno no AgroZap"
+      error: "Erro interno no AgroZap.",
+      detalhe: erro.message
     });
+
   }
 }
-
