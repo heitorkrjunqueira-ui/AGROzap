@@ -1,13 +1,17 @@
 export default async function handler(req, res) {
   if (req.method !== "POST") {
-    return res.status(405).json({ error: "Método não permitido" });
+    return res.status(405).json({
+      error: "Método não permitido"
+    });
   }
 
   try {
     const { mensagem } = req.body;
 
     if (!mensagem) {
-      return res.status(400).json({ error: "Mensagem obrigatória" });
+      return res.status(400).json({
+        error: "Mensagem obrigatória"
+      });
     }
 
     const resposta = await fetch("https://api.openai.com/v1/responses", {
@@ -18,34 +22,30 @@ export default async function handler(req, res) {
       },
       body: JSON.stringify({
         model: "gpt-5-mini",
-        input: [
-          {
-            role: "system",
-            content: "Você é o AgroZap. Entenda as mensagens de produtores rurais e responda em português. Não invente informações."
-          },
-          {
-            role: "user",
-            content: mensagem
-          }
-        ]
+        input: `Você é o AgroZap, um assistente para produtores rurais.
+Analise esta mensagem e responda de forma simples em português.
+Não invente informações.
+
+Mensagem do produtor:
+${mensagem}`
       })
     });
 
-    const data = await resposta.json();
+    const dados = await resposta.json();
 
     if (!resposta.ok) {
       return res.status(resposta.status).json({
-        error: data.error?.message || "Erro na OpenAI"
+        error: dados.error?.message || "Erro na OpenAI"
       });
     }
 
     return res.status(200).json({
-      resposta: data.output_text
+      resposta: dados.output_text
     });
 
   } catch (erro) {
     return res.status(500).json({
-      error: "Erro interno no servidor"
+      error: "Erro interno no AgroZap"
     });
   }
 }
